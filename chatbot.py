@@ -3,7 +3,7 @@
 # Original Python code by Ignacio Cases (@cases)
 ######################################################################
 import movielens
-
+import re
 import numpy as np
 
 
@@ -120,7 +120,9 @@ class Chatbot:
       :param text: a user-supplied line of text that may contain movie titles
       :returns: list of movie titles that are potentially in the text
       """
-      return []
+      regex = '"(.*?)"'
+      matches = re.findall(regex, text)
+      return matches
 
     def find_movies_by_title(self, title):
       """ Given a movie title, return a list of indices of matching movies.
@@ -138,9 +140,29 @@ class Chatbot:
       :param title: a string containing a movie title
       :returns: a list of indices of matching movies
       """
-      return []
+      regex = "\((\d{4})\)"
+      year = re.findall(regex, title)
+      if len(year) > 0: 
+        year = year[-1]      
+        title = title[:-7]
 
+      words = title.split(' ')
+      #TODO: Handle cases other than The, An, and A
+      if words[0] == "The" or words[0] == "An" or words[0] == "A":
+        title = ' '.join(word for word in words[1:]) + ', ' + words[0]
+      
+      matches = []
+      for i, movie in enumerate(movielens.titles()):
+        cur_title, _ = movie
+        cur_year = cur_title[-5:-1]
+        cur_title = cur_title[:-7]
 
+        if title == cur_title and (year == [] or year == cur_year):
+          matches.append(i)
+
+      return matches
+
+    #TODO: Definitely worth implementing +/-2 scoring
     def extract_sentiment(self, text):
       """Extract a sentiment rating from a line of text.
 
@@ -158,7 +180,23 @@ class Chatbot:
       :param text: a user-supplied line of text
       :returns: a numerical value for the sentiment of the text
       """
-      return 0
+      negations = {"not", "no", "rather", "never", "none", "nobody", "nothing",
+                      "neither", "nor", "nowhere", "cannot"}
+
+
+      score = 0
+      sentiments = movielens.sentiment()
+      val = 1
+      for word in text.split(' '):
+        if word in negations or word.endswith("n't"): val = -1
+        if "," in word or "." in word: val = 1
+        if word in sentiments:
+          if sentiments[word] == 'pos': score += val
+          elif sentiments[word] == 'neg': score -= val
+      
+      if score < 0: score = -1
+      elif score > 0: score = 1
+      return score
 
     def extract_sentiment_for_movies(self, text):
       """Creative Feature: Extracts the sentiments from a line of text
@@ -176,7 +214,9 @@ class Chatbot:
       :returns: a list of tuples, where the first item in the tuple is a movie title,
         and the second is the sentiment in the text toward that movie
       """
-      pass
+
+
+
 
     def find_movies_closest_to_title(self, title, max_distance=3):
       """Creative Feature: Given a potentially misspelled movie title,
@@ -243,7 +283,9 @@ class Chatbot:
       #############################################################################
 
       # The starter code returns a new matrix shaped like ratings but full of zeros.
-      binarized_ratings = np.zeros_like(ratings)
+      binarized_ratings = np.where(ratings > threshold, 1., -1.)
+      zero_mask = np.where(ratings != 0, 1, 0)
+      binarized_ratings = np.multiply(binarized_ratings, zero_mask)
 
       #############################################################################
       #                             END OF YOUR CODE                              #
@@ -264,7 +306,7 @@ class Chatbot:
       #############################################################################
       # TODO: Compute cosine similarity between the two vectors.
       #############################################################################
-      similarity = 0
+      similarity = np.dot(u,v) / (np.linalg.norm(u) * np.linalg.norm(v))
       #############################################################################
       #                             END OF YOUR CODE                              #
       #############################################################################
@@ -295,17 +337,36 @@ class Chatbot:
       # and matrix ratings_matrix and outputs a list of movies recommended by the chatbot.  #
       #                                                                                     #
       # For starter mode, you should use item-item collaborative filtering                  #
-      # with cosine similarity, no mean-centering, and no normalization of scores.          #
+      # with cosine similarity, no mean-centering, and no normalization of scores.  
+      # 
+      # Rows are movies, cols are users
       #######################################################################################
 
       # Populate this list with k movie indices to recommend to the user.
-      recommendations = []
 
+      #Find item similarities
+      m,n = ratings_matrix.shape
+      item_sims = np.dot(ratings_matrix, ratings_matrix.T)
+      item_sims = item_sims.astype(float)
+      norms = np.linalg.norm(ratings_matrix, axis=1)
+
+      for i in range(m):
+        item_sims[i,:] = item_sims[i,:] / norms[i]
+        item_sims[:,i] = item_sims[:,i] / norms[i]
+
+      #Create ratings by weighting similarities by user ratings
+      ratings = np.dot(item_sims, user_ratings)
+
+      #Get rid of ratings for movies that the user has already seen
+      for i in range(m):
+        if user_ratings[i] != 0:
+          ratings[i] = -np.inf
+
+      recommendations = list(np.argsort(ratings)[::-1])
       #############################################################################
       #                             END OF YOUR CODE                              #
       #############################################################################
-      return recommendations
-
+      return recommendations[:k]
 
     #############################################################################
     # 4. Debug info                                                             #
