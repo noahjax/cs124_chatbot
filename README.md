@@ -2,7 +2,7 @@
 Chatbot for assignment 6 of cs124
 
 Creative Features:
-Identifying movies without quotes (Parts 1 & 2) - 8pts - Book
+Identifying movies without quotes (Parts 1 & 2) - 8pts - Book \n
 Alternate and foreign titles - 8pts - Ab
 Fine grained sentiment extraction - 8pts - Noah
 Disambiguation (Parts 1 & 2) - 8pts - Noah
