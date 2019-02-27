@@ -151,13 +151,14 @@ class Chatbot:
       if words[0] == "The" or words[0] == "An" or words[0] == "A":
         title = ' '.join(word for word in words[1:]) + ', ' + words[0]
       
+      all_movies = movielens.titles()
       matches = []
-      for i, movie in enumerate(movielens.titles()):
+      for i, movie in enumerate(all_movies):
         cur_title, _ = movie
         cur_year = cur_title[-5:-1]
         cur_title = cur_title[:-7]
 
-        if title == cur_title and (year == [] or year == cur_year):
+        if title in cur_title and (year == [] or year == cur_year):
           matches.append(i)
 
       return matches
@@ -202,7 +203,7 @@ class Chatbot:
           elif sentiments[word] == 'neg': score -= val
       
       if score >= 2: return 2
-      elif score >= 0: return 1
+      elif score > 0: return 1
       elif score == 0: return 0
       elif score > -2: return -1
       else: return -2
@@ -224,9 +225,6 @@ class Chatbot:
       :returns: a list of tuples, where the first item in the tuple is a movie title,
         and the second is the sentiment in the text toward that movie
       """
-
-
-
 
     def find_movies_closest_to_title(self, title, max_distance=3):
       """Creative Feature: Given a potentially misspelled movie title,
@@ -268,7 +266,16 @@ class Chatbot:
       :param candidates: a list of movie indices
       :returns: a list of indices corresponding to the movies identified by the clarification
       """
-      pass
+      all_movies = movielens.titles()
+      ans = []
+      for index in candidates:
+        title_info = all_movies[index]
+        title = title_info[0]
+        genre = title_info[1]
+        if clarification in title or clarification in genre:
+          ans.append(index)
+      
+      return ans
 
 
     #############################################################################
@@ -386,8 +393,12 @@ class Chatbot:
       """Return debug information as a string for the line string from the REPL"""
       # Pass the debug information that you may think is important for your
       # evaluators
-      debug_info = 'debug info'
-      return debug_info
+      # debug_info = 'debug info'
+      titles = self.extract_titles(line)
+      movies = []
+      for title in titles:
+        movies.append(self.find_movies_by_title(title))
+      return movies
 
 
     #############################################################################
