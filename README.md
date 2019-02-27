@@ -6,9 +6,9 @@ Identifying movies without quotes (Parts 1 & 2) - 8pts - Book
 
 Alternate and foreign titles - 8pts - Ab
 
-Fine grained sentiment extraction - 8pts - Noah
+~Fine grained sentiment extraction~ - 8pts - Noah
 
-Disambiguation (Parts 1 & 2) - 8pts - Noah
+~Disambiguation (Parts 1 & 2)~ - 8pts - Noah
 
 Find movies closest to title - 6pts - Book
 
