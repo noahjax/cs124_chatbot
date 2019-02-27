@@ -180,10 +180,14 @@ class Chatbot:
       :param text: a user-supplied line of text
       :returns: a numerical value for the sentiment of the text
       """
+      #Create lists of important words for fine grained sentiment
       negations = {"not", "no", "rather", "never", "none", "nobody", "nothing",
                       "neither", "nor", "nowhere", "cannot"}
+      strong_words = {'really', 'very', 'especially'}
+      strong_pos = {'love', 'ecstatic', 'joy', 'magnificent', 'amazing', 'excellent', 'success'}
+      strong_neg = {'hate', 'despise', 'disgust', 'terrible', 'failure', 'disaster'}      
 
-
+      #Keep track of a sentiment score
       score = 0
       sentiments = movielens.sentiment()
       val = 1
@@ -191,12 +195,18 @@ class Chatbot:
         if word in negations or word.endswith("n't"): val = -1
         if "," in word or "." in word: val = 1
         if word in sentiments:
-          if sentiments[word] == 'pos': score += val
+          if word in strong_words: val *= 2
+          if word in strong_pos: score += 2
+          elif word in strong_neg: score -= 2
+          elif sentiments[word] == 'pos': score += val
           elif sentiments[word] == 'neg': score -= val
       
-      if score < 0: score = -1
-      elif score > 0: score = 1
-      return score
+      if score >= 2: return 2
+      elif score >= 0: return 1
+      elif score == 0: return 0
+      elif score > -2: return -1
+      else: return -2
+
 
     def extract_sentiment_for_movies(self, text):
       """Creative Feature: Extracts the sentiments from a line of text
