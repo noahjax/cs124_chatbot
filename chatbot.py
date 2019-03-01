@@ -135,19 +135,19 @@ class Chatbot:
           text = self.helper_extract_titles(line)
           if text != self.SENTINAL:
             return text
-          else:
+          # else:
             # print("Step 0 complete")
         if self.step_count == 1:
           text = self.helper_find_movies_by_title(line)
           if text != self.SENTINAL:
             return text
-          else:
+          # else:
             # print("Step 1 complete")
         if self.step_count == 2:
           text = self.helper_extract_sentiment(line)
           if text != self.SENTINAL:
             return text
-          else:
+          # else:
             # print("Step 2 complete")
         # after 5 titles, give recommendations
         if self.step_count == 3:
@@ -183,7 +183,7 @@ class Chatbot:
       # Step 1
 
       if not self.helper_extract_titles_begun:
-        print("extract titles begun")
+        # print("extract titles begun")
         self.originalLine = text
         self.listOfPotentialMovies = self.extract_titles(text)
         self.helper_extract_titles_begun = True
@@ -338,7 +338,7 @@ class Chatbot:
     def helper_extract_sentiment(self, text):
       print("extract sentiment was entered")
       if not self.helper_extract_sentiment_begun:
-        print("beginning of extract sentiment")
+        # print("beginning of extract sentiment")
         self.helper_extract_sentiment_begun = True
         sentiment = self.extract_sentiment(self.originalLine)
         if sentiment == 0:
@@ -364,7 +364,7 @@ class Chatbot:
       if sentiment < 0:
         sentimentStatement = "did not like "
       self.sentiment_message = "Ok, you " + sentimentStatement + self.moviename + "! "
-      print(self.sentiment_message)
+      # print(self.sentiment_message)
       self.step_count = 3
       return self.SENTINAL
     
