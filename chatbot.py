@@ -66,7 +66,8 @@ class Chatbot:
       # TODO: Write a short greeting message                                      #
       #############################################################################
 
-      greeting_message = "How can I help you?"
+      greeting_message = "Hi! If you tell me what movies you like, I can help you \
+                          find more good movies."
 
       #############################################################################
       #                             END OF YOUR CODE                              #
@@ -79,7 +80,7 @@ class Chatbot:
       # TODO: Write a short farewell message                                      #
       #############################################################################
 
-      goodbye_message = "Have a nice day!"
+      goodbye_message = "Bye! Come back anytime and I'll recommend more movies."
 
       #############################################################################
       #                             END OF YOUR CODE                              #
@@ -246,14 +247,7 @@ class Chatbot:
       """
       regex = '"(.*?)"'
       matches = re.findall(regex, text)
-      #for title in self.titles:
-        #print(title)
-      """
-        if '(' in title[0]:
-          regex = '(.*?) \('
-          print(re.findall(regex, title[0]))
-        else: print([title[0]])
-      """
+
       return matches
 
     '''
