@@ -19,7 +19,25 @@ class Chatbot:
       self.userMovieRatings = np.zeros((1,1))
       self.userMovieMap = {}
       self.MOVIELIMIT = 3
+      self.SENTINAL = 'XY-1-2-XY'
       self.all_movies = movielens.titles()
+
+      self.ArbritraryMessages = ["Hmmm... I couldn't understand what movie you are talking about? Can you please ",
+      "",
+      ""]
+
+
+      # Beginning booleans and ints to track progress throughout the code:
+      self.step_count = 0
+      self.helper_extract_titles_begun = False
+      self.helper_extract_titles_finish = False
+      self.helper_find_movies_by_title_begun = False
+
+      self.helper_extract_sentiment_begun = False
+      self.helper_extract_sentiment_second_attempt = False
+
+      self.helper_recommend_begun = False
+
 
       # This matrix has the following shape: num_movies x num_users
       # The values stored in each row i and column j is the rating for
@@ -99,12 +117,12 @@ class Chatbot:
 
         # AB: General Structure under self.basic
         # NEEDS: Disambiguate + everything else.
-        # extract_titles(line) 
+        # extract_titles(line)  --------------------- step 0
           # verify item with user
           # get one of them
-        # send to findmoviesbytitle
-        # extract sentiment
-        # self.userMovieMap[movieindex] = sentiment
+        # send to findmoviesbytitle------------------ step 1
+        # extract sentiment ------------------------- step 2
+        # self.userMovieMap[movieindex]= sentiment--- step3
 
 
       if self.creative:
@@ -113,77 +131,96 @@ class Chatbot:
       else:
         response = "I processed {} in starter mode!!".format(line)
 
-        listOfPotentialMovies = self.extract_titles(line)
-
-        if not listOfPotentialMovies:
-          return "I could not find any movie that matches that query. Can you please put all movies in Quotations\n"
-        
-        if len(listOfPotentialMovies) == 1:
-          st = input("Did you mean " + listOfPotentialMovies[0] + "? Please answer yes or no.\n")
-          if(st == 'yes'):
-            moviename = listOfPotentialMovies[0]
+        if self.step_count == 0:
+          text = self.helper_extract_titles(line)
+          if text != self.SENTINAL:
+            return text
           else:
-            return "okay, can we try from the top again?"
-        else: 
-          prompt = "Please enter the NUMBER ONLY if the title matches your name: \n"
-          for index in enumerate(listOfPotentialMovies):
-            indexInt = int(str(index[0]))
-            prompt += "(" + str(index[0]) + ") : " + listOfPotentialMovies[indexInt] + "\n"
-          index = int(input(prompt))
-          moviename = listOfPotentialMovies[index]
-
-        
-        # send to findmoviesbytitle
-        movieIndexes = self.find_movies_by_title(moviename)
-
-        if not movieIndexes:
-          return "We could not find a movie with that title. Please try again."
-        
-        if len(movieIndexes) > 1:
-          prompt = "Please enter the Number ONLY if the title matches your preference \n"
-          
-          for index in enumerate(movieIndexes):
-            prompt += "(" + str(index[0]) + ") : " + str(self.all_movies[(index[1])]) + "\n"
-          index = int(input(prompt))
-          movieIndex = movieIndexes[index]
-        else:
-          movieIndex = movieIndexes[0]
-
-        print( str(movieIndex) + ' is the movie index for ' + moviename )
-
-
-        # Extract Sentiment
-        sentiment = self.extract_sentiment(line)
-        self.userMovieMap[movieIndex] = sentiment
-        
-
-
-        # after 5 titles
-
-        if len(self.userMovieMap) > self.MOVIELIMIT:
-          self.userMovieRatings = np.zeros((len(movielens.titles())))
-          for k,v in self.userMovieMap.items():
-            self.userMovieRatings[k] = v
-
-          binUserRatings = self.binarize(self.userMovieRatings)
-          binRatings = self.binarize(self.ratings)
-          listOfReccomendations = self.recommend(binUserRatings, binRatings)
-          print(listOfReccomendations)
-
-          for index in listOfReccomendations:
-            all_movies = movielens.titles()
-            print("Movie is: " + str(all_movies[index]) + "\n")
-          
-          self.userMovieMap.clear()
-        
-        # recommend 
-          # moviemap to movie np array
-          # push recommend
+            # print("Step 0 complete")
+        if self.step_count == 1:
+          text = self.helper_find_movies_by_title(line)
+          if text != self.SENTINAL:
+            return text
+          else:
+            # print("Step 1 complete")
+        if self.step_count == 2:
+          text = self.helper_extract_sentiment(line)
+          if text != self.SENTINAL:
+            return text
+          else:
+            # print("Step 2 complete")
+        # after 5 titles, give recommendations
+        if self.step_count == 3:
+          text = self.helper_recommend(line)
+          if text != self.SENTINAL:
+            return text
+  
+  
 
       #############################################################################
       #                             END OF YOUR CODE                              #
       #############################################################################
       return ""
+
+    def reset_to_beginning(self, text):
+      self.step_count = 0
+      self.helper_extract_titles_begun = False
+      self.helper_extract_titles_finish = False
+      self.listOfPotentialMovies = {}
+
+      # Step 1 i.e. helper_find_movies_by_title
+      self.helper_find_movies_by_title_begun = False
+
+      # Step 2 i.e. find sentiment
+      self.helper_extract_sentiment_begun = False
+      self.helper_extract_sentiment_second_attempt = False
+
+      self.helper_recommend_begun = False
+
+      return ""
+
+    def helper_extract_titles(self,text):
+      # Step 1
+
+      if not self.helper_extract_titles_begun:
+        print("extract titles begun")
+        self.originalLine = text
+        self.listOfPotentialMovies = self.extract_titles(text)
+        self.helper_extract_titles_begun = True
+
+      if not self.listOfPotentialMovies:
+        sinv = self.reset_to_beginning("reset from no match")
+        return "I could not find any movie that matches that query. Can you please put the movie in Quotations and try again?\n"
+      
+      if not self.helper_extract_titles_finish:
+        self.helper_extract_titles_finish = True
+        if len(self.listOfPotentialMovies) > 2:
+          prompt = "Please enter the NUMBER ONLY if the title matches your name. Otherwise, enter whatever\n"
+          for index in enumerate(self.listOfPotentialMovies):
+            indexInt = int(str(index[0]))
+            prompt += "(" + str(index[0]) + ") : " + self.listOfPotentialMovies[indexInt] + "\n"
+          return prompt
+      
+      if len(self.listOfPotentialMovies) > 2:
+        try:
+          index = int(text)
+        except ValueError:
+          sinv = self.reset_to_beginning("reset from random string")
+          return "I didn't understand that. Let's start from the top again."
+        
+        if index < 0 or index > (len(self.listOfPotentialMovies)-1):
+          sinv = self.reset_to_beginning("reset from invalid number")
+          return "You inserted an invalid number...I guess, let's start from the top?"
+
+        # analyze prompt
+        self.moviename = self.listOfPotentialMovies[index]
+      else:
+        self.moviename = self.listOfPotentialMovies[0]
+
+        # Step 0 complete, set to go to step 1
+      self.step_count = 1
+
+      return self.SENTINAL
 
     def extract_titles(self, text):
       """Extract potential movie titles from a line of text.
@@ -215,6 +252,49 @@ class Chatbot:
         else: print([title[0]])
       """
       return matches
+
+    '''
+    helper method: text originally should be self.SENTINAL
+    returns either the prompt to user OR '-1'
+    '''
+    def helper_find_movies_by_title(self, text):
+      if not self.helper_find_movies_by_title_begun:
+        self.helper_find_movies_by_title_begun = True
+        self.movieIndexes = self.find_movies_by_title(self.moviename)
+
+        if not self.movieIndexes:
+          self.movieIndexes = self.find_movies_by_title(self.moviename.title())
+          if not self.movieIndexes:
+            self.reset_to_beginning("")
+            return "We could not find a movie with that title. Please try again.\n"
+      
+        if len(self.movieIndexes) > 1:
+          prompt = "I found a lot of movies that matches under " + self.moviename + "\n"
+          prompt += "Can you please enter the number that best matches the movie you wanted? or say anything else? \n"
+          
+          for index in enumerate(self.movieIndexes):
+            prompt += "(" + str(index[0]) + ") : " + str(  self.all_movies[(index[1])][0]  ) + "\n"
+          return prompt
+
+      if len(self.movieIndexes) == 1:
+        self.movieIndex = self.movieIndexes[0]
+        self.step_count = 2
+        return self.SENTINAL
+      
+      try:
+        index = int(text)
+      except ValueError:
+        self.reset_to_beginning("")
+        return "I don't understand that option... Let's start again?"
+
+      if index > (len(self.movieIndexes) -1) or index < 0:
+        self.reset_to_beginning("")
+        return "I understand that you don't want any of these options... Can we start again?"
+      self.movieIndex = self.movieIndexes[index]
+
+      # was on set1 now going on to step 2
+      self.step_count = 2
+      return self.SENTINAL
 
     def find_movies_by_title(self, title):
       """ Given a movie title, return a list of indices of matching movies.
@@ -255,6 +335,40 @@ class Chatbot:
 
       return matches
 
+    def helper_extract_sentiment(self, text):
+      print("extract sentiment was entered")
+      if not self.helper_extract_sentiment_begun:
+        print("beginning of extract sentiment")
+        self.helper_extract_sentiment_begun = True
+        sentiment = self.extract_sentiment(self.originalLine)
+        if sentiment == 0:
+          prompt = "I saw that you wrote \"" + self.originalLine + "\" but...like...how did " + self.moviename + " make you feel?\n"
+          return prompt
+
+      elif not self.helper_extract_sentiment_second_attempt:
+        self.helper_extract_sentiment_second_attempt = True
+        sentiment = self.extract_sentiment(text)
+        if sentiment == 0:
+          prompt = "Dude, I can't tell...Does that mean you like it or disliked it?\n"
+          return prompt
+      
+      else:
+        sentiment = self.extract_sentiment(text)
+        if sentiment == 0:
+          self.reset_to_beginning("")
+          return "I give up. I can't tell what you are saying...Tell me about a different movie instead?\n"
+
+      self.userMovieMap[self.movieIndex] = sentiment
+
+      sentimentStatement = "liked "
+      if sentiment < 0:
+        sentimentStatement = "did not like "
+      self.sentiment_message = "Ok, you " + sentimentStatement + self.moviename + "! "
+      print(self.sentiment_message)
+      self.step_count = 3
+      return self.SENTINAL
+    
+    
     #TODO: Definitely worth implementing +/-2 scoring
     def extract_sentiment(self, text):
       """Extract a sentiment rating from a line of text.
@@ -423,6 +537,39 @@ class Chatbot:
       return similarity
 
 
+    def helper_recommend(self, text):
+      if not self.helper_recommend_begun:
+        self.helper_recommend_begun = True
+        if len(self.userMovieMap) > self.MOVIELIMIT:
+          self.userMovieRatings = np.zeros((len(movielens.titles())))
+          for k,v in self.userMovieMap.items():
+            self.userMovieRatings[k] = v
+
+          binUserRatings = self.binarize(self.userMovieRatings)
+          binRatings = self.binarize(self.ratings)
+          self.listOfReccomendations = self.recommend(binUserRatings, binRatings)
+
+          prompt = ("given what you told me, I think you would like the following movies: ")
+          prompt += str(self.all_movies[self.listOfReccomendations[0]][0]) + " " + str(self.all_movies[self.listOfReccomendations[1]][0]) + " " + str(self.all_movies[self.listOfReccomendations[2]][0]) + ". Would you like to hear more recommendations?"
+
+          return prompt
+        else: 
+          self.reset_to_beginning("")
+          return self.sentiment_message + "Can you tell me about another movie? \n"
+      else:    
+          if 'ye' in text or 'ya' in text:
+            prompt = "\nThe rest of the movies are: "
+            for index in range(3, len(self.listOfReccomendations)):
+              prompt += str(self.all_movies[index][0]) + "\n"          
+          prompt += "Thank you so much for trying me out and I hope that you continue using me :) For now, I'll forget every movie you used to like and restart over \n"
+          prompt += "Please tell me your thoughts on some movies, so I can recommend some new movies to you :) \n"
+          self.reset_to_beginning("")
+          self.userMovieMap.clear()
+          self.listOfPotentialMovies.clear()
+          self.listOfReccomendations.clear()
+          return prompt
+
+        
     def recommend(self, user_ratings, ratings_matrix, k=10, creative=False):
       """Generate a list of indices of movies to recommend using collaborative filtering.
 
