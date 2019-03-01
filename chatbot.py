@@ -398,12 +398,17 @@ class Chatbot:
       score = 0
       sentiments = movielens.sentiment()
       val = 1
-      for word in text.split(' '):
+
+      # words = text.split(' ')
+      # print(words)
+
+
+      for i, word in enumerate(text.split(' ')):
         if word in negations or word.endswith("n't"): val = -1
         if "," in word or "." in word: val = 1
         if word in sentiments:
           if word in strong_words: val *= 2
-          if word in strong_pos: score += 2
+          elif word in strong_pos: score += 2
           elif word in strong_neg: score -= 2
           elif sentiments[word] == 'pos': score += val
           elif sentiments[word] == 'neg': score -= val
@@ -601,28 +606,41 @@ class Chatbot:
 
       # Populate this list with k movie indices to recommend to the user.
 
-      #Find item similarities
-      m,n = ratings_matrix.shape
-      item_sims = np.dot(ratings_matrix, ratings_matrix.T)
-      item_sims = item_sims.astype(float)
-      norms = np.linalg.norm(ratings_matrix, axis=1)
+      #Only care about movies the user has rated
+      valid_movies = np.where(user_ratings != 0) 
+      useful_ratings = ratings_matrix[valid_movies]
 
+      #Get cosine similarity between what user has rated and everything else
+      item_sims = np.dot(useful_ratings, ratings_matrix.T)
+      item_sims = item_sims.astype(float)
+
+      #Normalize
+      col_norms = np.linalg.norm(ratings_matrix, axis=1)
+      row_norms = np.linalg.norm(useful_ratings, axis=1)
+
+      m,n = item_sims.shape
       for i in range(m):
-        item_sims[i,:] = item_sims[i,:] / norms[i]
-        item_sims[:,i] = item_sims[:,i] / norms[i]
+        if row_norms[i] == 0: item_sims[i:] = 0
+        else:
+          item_sims[i,:] = item_sims[i,:] / row_norms[i]
+      for i in range(n):
+        if col_norms[i] == 0: item_sims[:,i] = 0
+        else:  
+          item_sims[:,i] = item_sims[:,i] / col_norms[i]
+
 
       #Create ratings by weighting similarities by user ratings
-      ratings = np.dot(item_sims, user_ratings)
+      valid_user_ratings = user_ratings[valid_movies]
+      ratings = np.dot(item_sims.T, valid_user_ratings)
 
-      #Get rid of ratings for movies that the user has already seen
-      for i in range(m):
-        if user_ratings[i] != 0:
-          ratings[i] = -np.inf
+      # Get rid of ratings for movies that the user has already seen
+      ratings[valid_movies] = -np.inf
 
       recommendations = list(np.argsort(ratings)[::-1])
-      #############################################################################
-      #                             END OF YOUR CODE                              #
-      #############################################################################
+        
+      # #############################################################################
+      # #                             END OF YOUR CODE                              #
+      # #############################################################################
       return recommendations[:k]
 
     #############################################################################
