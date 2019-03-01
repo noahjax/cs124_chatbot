@@ -12,9 +12,9 @@ Alternate and foreign titles - 8pts - Ab
 
 Find movies closest to title - 6pts - Book
 
-Responding to arbitrary input - 8pts - Ab
+~Responding to arbitrary input~ - 8pts - Ab
 
-Dialogue for disambiguation - 2pts - Noah
+~Dialogue for disambiguation~ - 2pts - Noah
 
 Dialogue for spell-checking - 2pts - Book
 
