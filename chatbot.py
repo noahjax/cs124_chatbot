@@ -12,9 +12,14 @@ class Chatbot:
 
     def __init__(self, creative=False):
       # The chatbot's default name is `moviebot`. Give your chatbot a new name.
-      self.name = 'moviebot'
+      self.name = "Noah\'s Books"
 
       self.creative = creative
+
+      self.userMovieRatings = np.zeros((1,1))
+      self.userMovieMap = {}
+      self.MOVIELIMIT = 3
+      self.all_movies = movielens.titles()
 
       # This matrix has the following shape: num_movies x num_users
       # The values stored in each row i and column j is the rating for
@@ -91,15 +96,93 @@ class Chatbot:
       # possibly calling other functions. Although modular code is not graded,    #
       # it is highly recommended.                                                 #
       #############################################################################
+
+        # AB: General Structure under self.basic
+        # NEEDS: Disambiguate + everything else.
+        # extract_titles(line) 
+          # verify item with user
+          # get one of them
+        # send to findmoviesbytitle
+        # extract sentiment
+        # self.userMovieMap[movieindex] = sentiment
+
+
       if self.creative:
         response = "I processed {} in creative mode!!".format(line)
       else:
         response = "I processed {} in starter mode!!".format(line)
 
+        listOfPotentialMovies = self.extract_titles(line)
+
+        if not listOfPotentialMovies:
+          return "I could not find any movie that matches that query. Can you please put all movies in Quotations\n"
+        
+        if len(listOfPotentialMovies) == 1:
+          st = input("Did you mean " + listOfPotentialMovies[0] + "? Please answer yes or no.\n")
+          if(st == 'yes'):
+            moviename = listOfPotentialMovies[0]
+          else:
+            return "okay, can we try from the top again?"
+        else: 
+          prompt = "Please enter the NUMBER ONLY if the title matches your name: \n"
+          for index in enumerate(listOfPotentialMovies):
+            indexInt = int(str(index[0]))
+            prompt += "(" + str(index[0]) + ") : " + listOfPotentialMovies[indexInt] + "\n"
+          index = int(input(prompt))
+          moviename = listOfPotentialMovies[index]
+
+        
+        # send to findmoviesbytitle
+        movieIndexes = self.find_movies_by_title(moviename)
+
+        if not movieIndexes:
+          return "We could not find a movie with that title. Please try again."
+        
+        if len(movieIndexes) > 1:
+          prompt = "Please enter the Number ONLY if the title matches your preference \n"
+          
+          for index in enumerate(movieIndexes):
+            prompt += "(" + str(index[0]) + ") : " + str(self.all_movies[(index[1])]) + "\n"
+          index = int(input(prompt))
+          movieIndex = movieIndexes[index]
+        else:
+          movieIndex = movieIndexes[0]
+
+        print( str(movieIndex) + ' is the movie index for ' + moviename )
+
+
+        # Extract Sentiment
+        sentiment = self.extract_sentiment(line)
+        self.userMovieMap[movieIndex] = sentiment
+        
+
+
+        # after 5 titles
+
+        if len(self.userMovieMap) > self.MOVIELIMIT:
+          self.userMovieRatings = np.zeros((len(movielens.titles())))
+          for k,v in self.userMovieMap.items():
+            self.userMovieRatings[k] = v
+
+          binUserRatings = self.binarize(self.userMovieRatings)
+          binRatings = self.binarize(self.ratings)
+          listOfReccomendations = self.recommend(binUserRatings, binRatings)
+          print(listOfReccomendations)
+
+          for index in listOfReccomendations:
+            all_movies = movielens.titles()
+            print("Movie is: " + str(all_movies[index]) + "\n")
+          
+          self.userMovieMap.clear()
+        
+        # recommend 
+          # moviemap to movie np array
+          # push recommend
+
       #############################################################################
       #                             END OF YOUR CODE                              #
       #############################################################################
-      return response
+      return ""
 
     def extract_titles(self, text):
       """Extract potential movie titles from a line of text.
@@ -122,6 +205,7 @@ class Chatbot:
       """
       regex = '"(.*?)"'
       matches = re.findall(regex, text)
+      print("extract titles works")
       return matches
 
     def find_movies_by_title(self, title):
@@ -208,7 +292,6 @@ class Chatbot:
       elif score > -2: return -1
       else: return -2
 
-
     def extract_sentiment_for_movies(self, text):
       """Creative Feature: Extracts the sentiments from a line of text
       that may contain multiple movies. Note that the sentiments toward
@@ -226,6 +309,7 @@ class Chatbot:
         and the second is the sentiment in the text toward that movie
       """
 
+    #   creative
     def find_movies_closest_to_title(self, title, max_distance=3):
       """Creative Feature: Given a potentially misspelled movie title,
       return a list of the movies in the dataset whose titles have the least edit distance
@@ -246,7 +330,8 @@ class Chatbot:
       """
 
       pass
-
+    
+    #   creative
     def disambiguate(self, clarification, candidates):
       """Creative Feature: Given a list of movies that the user could be talking about 
       (represented as indices), and a string given by the user as clarification 
@@ -414,7 +499,8 @@ class Chatbot:
       Your task is to implement the chatbot as detailed in the PA6 instructions.
       Remember: in the starter mode, movie names will come in quotation marks and
       expressions of sentiment will be simple!
-      Write here the description for your own chatbot!
+      
+      
       """
 
 
