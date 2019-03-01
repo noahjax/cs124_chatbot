@@ -12,7 +12,7 @@ class Chatbot:
 
     def __init__(self, creative=False):
       # The chatbot's default name is `moviebot`. Give your chatbot a new name.
-      self.name = 'moviebot'
+      self.name = 'Lil_Tae'
 
       self.creative = creative
 
@@ -93,6 +93,7 @@ class Chatbot:
       #############################################################################
       if self.creative:
         response = "I processed {} in creative mode!!".format(line)
+        #print(self.extract_titles(line))
       else:
         response = "I processed {} in starter mode!!".format(line)
 
@@ -122,6 +123,14 @@ class Chatbot:
       """
       regex = '"(.*?)"'
       matches = re.findall(regex, text)
+      #for title in self.titles:
+        #print(title)
+      """
+        if '(' in title[0]:
+          regex = '(.*?) \('
+          print(re.findall(regex, title[0]))
+        else: print([title[0]])
+      """
       return matches
 
     def find_movies_by_title(self, title):
