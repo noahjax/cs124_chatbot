@@ -20,7 +20,6 @@ class Chatbot:
       self.userMovieMap = {}
       self.MOVIELIMIT = 3
       self.SENTINAL = 'XY-1-2-XY'
-      self.all_movies = movielens.titles()
 
       self.ArbritraryMessages = ["Hmmm... I couldn't understand what movie you are talking about? Can you please ",
       "",
@@ -65,7 +64,7 @@ class Chatbot:
       # TODO: Write a short greeting message                                      #
       #############################################################################
 
-      greeting_message = "How can I help you?"
+      greeting_message = "I'm here to help...Can you tell me what movies you like and I can then recommend something you like?"
 
       #############################################################################
       #                             END OF YOUR CODE                              #
@@ -78,7 +77,7 @@ class Chatbot:
       # TODO: Write a short farewell message                                      #
       #############################################################################
 
-      goodbye_message = "Have a nice day!"
+      goodbye_message = "Thanks for using me. I hope you come and talk to me again soon!"
 
       #############################################################################
       #                             END OF YOUR CODE                              #
@@ -122,7 +121,7 @@ class Chatbot:
           # get one of them
         # send to findmoviesbytitle------------------ step 1
         # extract sentiment ------------------------- step 2
-        # self.userMovieMap[movieindex]= sentiment--- step3
+        # self.userMovieMap[movieindex]= sentiment--- step 3
 
 
       if self.creative:
@@ -131,29 +130,29 @@ class Chatbot:
       else:
         response = "I processed {} in starter mode!!".format(line)
 
-        if self.step_count == 0:
-          text = self.helper_extract_titles(line)
-          if text != self.SENTINAL:
-            return text
-          # else:
-            # print("Step 0 complete")
-        if self.step_count == 1:
-          text = self.helper_find_movies_by_title(line)
-          if text != self.SENTINAL:
-            return text
-          # else:
-            # print("Step 1 complete")
-        if self.step_count == 2:
-          text = self.helper_extract_sentiment(line)
-          if text != self.SENTINAL:
-            return text
+        # if self.step_count == 0:
+        #   text = self.helper_extract_titles(line)
+        #   if text != self.SENTINAL:
+        #     return text
+        #   # else:
+        #     # print("Step 0 complete")
+        # if self.step_count == 1:
+        #   text = self.helper_find_movies_by_title(line)
+        #   if text != self.SENTINAL:
+        #     return text
+        #   # else:
+        #     # print("Step 1 complete")
+        # if self.step_count == 2:
+        #   text = self.helper_extract_sentiment(line)
+        #   if text != self.SENTINAL:
+        #     return text
           # else:
             # print("Step 2 complete")
-        # after 5 titles, give recommendations
-        if self.step_count == 3:
-          text = self.helper_recommend(line)
-          if text != self.SENTINAL:
-            return text
+        # # after 5 titles, give recommendations
+        # if self.step_count == 3:
+        #   text = self.helper_recommend(line)
+        #   if text != self.SENTINAL:
+        #     return text
   
   
 
@@ -257,83 +256,84 @@ class Chatbot:
     helper method: text originally should be self.SENTINAL
     returns either the prompt to user OR '-1'
     '''
-    def helper_find_movies_by_title(self, text):
-      if not self.helper_find_movies_by_title_begun:
-        self.helper_find_movies_by_title_begun = True
-        self.movieIndexes = self.find_movies_by_title(self.moviename)
+    # def helper_find_movies_by_title(self, text):
+    #   if not self.helper_find_movies_by_title_begun:
+    #     self.helper_find_movies_by_title_begun = True
+    #     self.movieIndexes = self.find_movies_by_title(self.moviename)
 
-        if not self.movieIndexes:
-          self.movieIndexes = self.find_movies_by_title(self.moviename.title())
-          if not self.movieIndexes:
-            self.reset_to_beginning("")
-            return "We could not find a movie with that title. Please try again.\n"
+    #     if not self.movieIndexes:
+    #       self.movieIndexes = self.find_movies_by_title(self.moviename.title())
+    #       if not self.movieIndexes:
+    #         self.reset_to_beginning("")
+    #         return "We could not find a movie with that title. Please try again.\n"
       
-        if len(self.movieIndexes) > 1:
-          prompt = "I found a lot of movies that matches under " + self.moviename + "\n"
-          prompt += "Can you please enter the number that best matches the movie you wanted? or say anything else? \n"
+    #     if len(self.movieIndexes) > 1:
+    #       prompt = "I found a lot of movies that matches under " + self.moviename + "\n"
+    #       prompt += "Can you please enter the number that best matches the movie you wanted? or say anything else? \n"
           
-          for index in enumerate(self.movieIndexes):
-            prompt += "(" + str(index[0]) + ") : " + str(  self.all_movies[(index[1])][0]  ) + "\n"
-          return prompt
+    #       movie_titles = movielens.titles()
+    #       for index in enumerate(self.movieIndexes):
+    #         prompt += "(" + str(index[0]) + ") : " + str(  movie_titles[(index[1])][0]  ) + "\n"
+    #       return prompt
 
-      if len(self.movieIndexes) == 1:
-        self.movieIndex = self.movieIndexes[0]
-        self.step_count = 2
-        return self.SENTINAL
+    #   if len(self.movieIndexes) == 1:
+    #     self.movieIndex = self.movieIndexes[0]
+    #     self.step_count = 2
+    #     return self.SENTINAL
       
-      try:
-        index = int(text)
-      except ValueError:
-        self.reset_to_beginning("")
-        return "I don't understand that option... Let's start again?"
+    #   try:
+    #     index = int(text)
+    #   except ValueError:
+    #     self.reset_to_beginning("")
+    #     return "I don't understand that option... Let's start again?"
 
-      if index > (len(self.movieIndexes) -1) or index < 0:
-        self.reset_to_beginning("")
-        return "I understand that you don't want any of these options... Can we start again?"
-      self.movieIndex = self.movieIndexes[index]
+    #   if index > (len(self.movieIndexes) -1) or index < 0:
+    #     self.reset_to_beginning("")
+    #     return "I understand that you don't want any of these options... Can we start again?"
+    #   self.movieIndex = self.movieIndexes[index]
 
-      # was on set1 now going on to step 2
-      self.step_count = 2
-      return self.SENTINAL
+    #   # was on set1 now going on to step 2
+    #   self.step_count = 2
+    #   return self.SENTINAL
 
-    def find_movies_by_title(self, title):
-      """ Given a movie title, return a list of indices of matching movies.
+    # def find_movies_by_title(self, title):
+    #   """ Given a movie title, return a list of indices of matching movies.
 
-      - If no movies are found that match the given title, return an empty list.
-      - If multiple movies are found that match the given title, return a list
-      containing all of the indices of these matching movies.
-      - If exactly one movie is found that matches the given title, return a list
-      that contains the index of that matching movie.
+    #   - If no movies are found that match the given title, return an empty list.
+    #   - If multiple movies are found that match the given title, return a list
+    #   containing all of the indices of these matching movies.
+    #   - If exactly one movie is found that matches the given title, return a list
+    #   that contains the index of that matching movie.
 
-      Example:
-        ids = chatbot.find_movies_by_title('Titanic')
-        print(ids) // prints [1359, 1953]
+    #   Example:
+    #     ids = chatbot.find_movies_by_title('Titanic')
+    #     print(ids) // prints [1359, 1953]
 
-      :param title: a string containing a movie title
-      :returns: a list of indices of matching movies
-      """
-      regex = "\((\d{4})\)"
-      year = re.findall(regex, title)
-      if len(year) > 0: 
-        year = year[-1]      
-        title = title[:-7]
+    #   :param title: a string containing a movie title
+    #   :returns: a list of indices of matching movies
+    #   """
+    #   regex = "\((\d{4})\)"
+    #   year = re.findall(regex, title)
+    #   if len(year) > 0: 
+    #     year = year[-1]      
+    #     title = title[:-7]
 
-      words = title.split(' ')
-      #TODO: Handle cases other than The, An, and A
-      if words[0] == "The" or words[0] == "An" or words[0] == "A":
-        title = ' '.join(word for word in words[1:]) + ', ' + words[0]
+    #   words = title.split(' ')
+    #   #TODO: Handle cases other than The, An, and A
+    #   if words[0] == "The" or words[0] == "An" or words[0] == "A":
+    #     title = ' '.join(word for word in words[1:]) + ', ' + words[0]
       
-      all_movies = movielens.titles()
-      matches = []
-      for i, movie in enumerate(all_movies):
-        cur_title, _ = movie
-        cur_year = cur_title[-5:-1]
-        cur_title = cur_title[:-7]
+    #   all_movies = movielens.titles()
+    #   matches = []
+    #   for i, movie in enumerate(all_movies):
+    #     cur_title, _ = movie
+    #     cur_year = cur_title[-5:-1]
+    #     cur_title = cur_title[:-7]
 
-        if title in cur_title and (year == [] or year == cur_year):
-          matches.append(i)
+    #     if title in cur_title and (year == [] or year == cur_year):
+    #       matches.append(i)
 
-      return matches
+    #   return matches
 
     def helper_extract_sentiment(self, text):
       print("extract sentiment was entered")
@@ -489,55 +489,55 @@ class Chatbot:
     # 3. Movie Recommendation helper functions                                  #
     #############################################################################
 
-    def binarize(self, ratings, threshold=2.5):
-      """Return a binarized version of the given matrix.
+    # def binarize(self, ratings, threshold=2.5):
+    #   """Return a binarized version of the given matrix.
 
-      To binarize a matrix, replace all entries above the threshold with 1.
-      and replace all entries at or below the threshold with a -1.
+    #   To binarize a matrix, replace all entries above the threshold with 1.
+    #   and replace all entries at or below the threshold with a -1.
 
-      Entries whose values are 0 represent null values and should remain at 0.
+    #   Entries whose values are 0 represent null values and should remain at 0.
 
-      :param x: a (num_movies x num_users) matrix of user ratings, from 0.5 to 5.0
-      :param threshold: Numerical rating above which ratings are considered positive
+    #   :param x: a (num_movies x num_users) matrix of user ratings, from 0.5 to 5.0
+    #   :param threshold: Numerical rating above which ratings are considered positive
 
-      :returns: a binarized version of the movie-rating matrix
-      """
-      #############################################################################
-      # TODO: Binarize the supplied ratings matrix.                               #
-      #############################################################################
+    #   :returns: a binarized version of the movie-rating matrix
+    #   """
+    #   #############################################################################
+    #   # TODO: Binarize the supplied ratings matrix.                               #
+    #   #############################################################################
 
-      # The starter code returns a new matrix shaped like ratings but full of zeros.
-      binarized_ratings = np.where(ratings > threshold, 1., -1.)
-      zero_mask = np.where(ratings != 0, 1, 0)
-      binarized_ratings = np.multiply(binarized_ratings, zero_mask)
+    #   # The starter code returns a new matrix shaped like ratings but full of zeros.
+    #   binarized_ratings = np.where(ratings > threshold, 1., -1.)
+    #   zero_mask = np.where(ratings != 0, 1, 0)
+    #   binarized_ratings = np.multiply(binarized_ratings, zero_mask)
 
-      #############################################################################
-      #                             END OF YOUR CODE                              #
-      #############################################################################
-      return binarized_ratings
+    #   #############################################################################
+    #   #                             END OF YOUR CODE                              #
+    #   #############################################################################
+    #   return binarized_ratings
 
 
-    def similarity(self, u, v):
-      """Calculate the cosine similarity between two vectors.
+    # def similarity(self, u, v):
+    #   """Calculate the cosine similarity between two vectors.
 
-      You may assume that the two arguments have the same shape.
+    #   You may assume that the two arguments have the same shape.
 
-      :param u: one vector, as a 1D numpy array
-      :param v: another vector, as a 1D numpy array
+    #   :param u: one vector, as a 1D numpy array
+    #   :param v: another vector, as a 1D numpy array
 
-      :returns: the cosine similarity between the two vectors
-      """
-      #############################################################################
-      # TODO: Compute cosine similarity between the two vectors.
-      #############################################################################
-      similarity = np.dot(u,v) / (np.linalg.norm(u) * np.linalg.norm(v))
-      #############################################################################
-      #                             END OF YOUR CODE                              #
-      #############################################################################
-      return similarity
-
+    #   :returns: the cosine similarity between the two vectors
+    #   """
+    #   #############################################################################
+    #   # TODO: Compute cosine similarity between the two vectors.
+    #   #############################################################################
+    #   similarity = np.dot(u,v) / (np.linalg.norm(u) * np.linalg.norm(v))
+    #   #############################################################################
+    #   #                             END OF YOUR CODE                              #
+    #   #############################################################################
+    #   return similarity
 
     def helper_recommend(self, text):
+      all_movies = movielens.titles()
       if not self.helper_recommend_begun:
         self.helper_recommend_begun = True
         if len(self.userMovieMap) > self.MOVIELIMIT:
@@ -550,7 +550,7 @@ class Chatbot:
           self.listOfReccomendations = self.recommend(binUserRatings, binRatings)
 
           prompt = ("given what you told me, I think you would like the following movies: ")
-          prompt += str(self.all_movies[self.listOfReccomendations[0]][0]) + " " + str(self.all_movies[self.listOfReccomendations[1]][0]) + " " + str(self.all_movies[self.listOfReccomendations[2]][0]) + ". Would you like to hear more recommendations?"
+          prompt += str(all_movies[self.listOfReccomendations[0]][0]) + " " + str(all_movies[self.listOfReccomendations[1]][0]) + " " + str(all_movies[self.listOfReccomendations[2]][0]) + ". Would you like to hear more recommendations?"
 
           return prompt
         else: 
@@ -560,7 +560,7 @@ class Chatbot:
           if 'ye' in text or 'ya' in text:
             prompt = "\nThe rest of the movies are: "
             for index in range(3, len(self.listOfReccomendations)):
-              prompt += str(self.all_movies[index][0]) + "\n"          
+              prompt += str(all_movies[index][0]) + "\n"          
           prompt += "Thank you so much for trying me out and I hope that you continue using me :) For now, I'll forget every movie you used to like and restart over \n"
           prompt += "Please tell me your thoughts on some movies, so I can recommend some new movies to you :) \n"
           self.reset_to_beginning("")
@@ -568,7 +568,6 @@ class Chatbot:
           self.listOfPotentialMovies.clear()
           self.listOfReccomendations.clear()
           return prompt
-
         
     def recommend(self, user_ratings, ratings_matrix, k=10, creative=False):
       """Generate a list of indices of movies to recommend using collaborative filtering.
