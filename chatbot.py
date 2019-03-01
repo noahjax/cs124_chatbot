@@ -5,6 +5,7 @@
 import movielens
 import re
 import numpy as np
+from PorterStemmer import PorterStemmer
 
 
 class Chatbot:
@@ -121,6 +122,8 @@ class Chatbot:
           # verify item with user
           # get one of them
         # send to findmoviesbytitle------------------ step 1
+
+
         # extract sentiment ------------------------- step 2
         # self.userMovieMap[movieindex]= sentiment--- step3
 
@@ -387,37 +390,106 @@ class Chatbot:
       :param text: a user-supplied line of text
       :returns: a numerical value for the sentiment of the text
       """
+
+      p = PorterStemmer()
+      sentiments = movielens.sentiment()
+      sentiments = {p.stem(key): sentiments[key] for key in sentiments}
+      
       #Create lists of important words for fine grained sentiment
       negations = {"not", "no", "rather", "never", "none", "nobody", "nothing",
                       "neither", "nor", "nowhere", "cannot"}
+      negations = set([p.stem(word) for word in negations])
       strong_words = {'really', 'very', 'especially'}
+      strong_words = set([p.stem(word) for word in strong_words])
       strong_pos = {'love', 'ecstatic', 'joy', 'magnificent', 'amazing', 'excellent', 'success'}
+      strong_pos = set([p.stem(word) for word in strong_pos])
       strong_neg = {'hate', 'despise', 'disgust', 'terrible', 'failure', 'disaster'}      
+      strong_neg = set([p.stem(word) for word in strong_neg])
 
-      #Keep track of a sentiment score
+     
+      #Process words to easily manage later
+      words = text.split(' ')
+      processed_words = []
+      negated = ''
+      strong = ''
+      for word in words:
+        #Stem word
+        word = p.stem(word)
+        #If word has punctuation then remove and signal to break negation
+        if '.' in word or ',' in word:
+          word = word.replace('.', '')
+          word = word.replace(',', '')
+          processed_words.append(strong + negated + word)
+          processed_words.append("_break_")
+          negated = ''
+        
+        #If word negates, set negate flag but don't add word
+        if word in negations or word.endswith("n't"):
+          negated = 'NOT_'
+        else:
+          #Add NOT_ to next words until break if negate is on
+          processed_words.append(strong + negated + word)
+        
+        #If word is strong, mark next word to be emphasized
+        if word in strong_words:
+          strong = 'STRONG_'
+        #Word isn't strong, unmark next word
+        else:
+          strong = ''
+        
+      #Add scores for each word
       score = 0
-      sentiments = movielens.sentiment()
-      val = 1
-
-      # words = text.split(' ')
-      # print(words)
-
-
-      for i, word in enumerate(text.split(' ')):
-        if word in negations or word.endswith("n't"): val = -1
-        if "," in word or "." in word: val = 1
+      for word in processed_words:
+        val = 1
+        #Check the flags on the word to set val
+        if 'STRONG_' in word:
+          val *= 2
+          word = word[7:] 
+        if 'NOT_' in word: 
+          val *= -1
+          word = word[4:]
+        
+        #Use word sentiment along with flags to add to score
         if word in sentiments:
-          if word in strong_words: val *= 2
-          elif word in strong_pos: score += 2
-          elif word in strong_neg: score -= 2
-          elif sentiments[word] == 'pos': score += val
-          elif sentiments[word] == 'neg': score -= val
-      
-      if score >= 2: return 2
+          if self.creative and word in strong_pos:
+            score += 2 * val
+          elif self.creative and word in strong_neg:
+            score -= 2 * val
+          elif sentiments[word] == 'pos': 
+            score += val
+          elif sentiments[word] == 'neg': 
+            score -= val
+
+      if self.creative and score >= 2: return 2
+      elif self.creative and score <= -2: return -2
       elif score > 0: return 1
-      elif score == 0: return 0
-      elif score > -2: return -1
-      else: return -2
+      elif score < 0: return -1
+      else: return 0
+
+
+
+      # score = 0
+      # val = 1
+      # for i, word in enumerate(text.split(' ')):
+      #   word = word.lower()
+      #   if word in negations or word.endswith("n't"): val = -1
+      #   if "," in word or "." in word: 
+      #     val = 1
+      #   if word in sentiments:
+      #     if word in strong_words: val *= 2
+      #     elif word in strong_pos: score += 2
+      #     elif word in strong_neg: score -= 2
+      #     if sentiments[word] == 'pos': score += val
+      #     elif sentiments[word] == 'neg': score -= val
+      
+      # if score >= 2 and self.creative: return 2
+      # elif score > 0: return 1
+      # elif score == 0: return 0
+      # elif score > -2: return -1
+      # elif self.creative: return -2
+      # else: return -1
+
+      
 
     def extract_sentiment_for_movies(self, text):
       """Creative Feature: Extracts the sentiments from a line of text
