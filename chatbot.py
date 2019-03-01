@@ -460,36 +460,15 @@ class Chatbot:
           elif sentiments[word] == 'neg': 
             score -= val
 
+      #If the sentence ends with an exclamation point, mark as strong sentiment
+      if '!' in processed_words[-1]: score *= 2
+
       if self.creative and score >= 2: return 2
       elif self.creative and score <= -2: return -2
       elif score > 0: return 1
       elif score < 0: return -1
       else: return 0
 
-
-
-      # score = 0
-      # val = 1
-      # for i, word in enumerate(text.split(' ')):
-      #   word = word.lower()
-      #   if word in negations or word.endswith("n't"): val = -1
-      #   if "," in word or "." in word: 
-      #     val = 1
-      #   if word in sentiments:
-      #     if word in strong_words: val *= 2
-      #     elif word in strong_pos: score += 2
-      #     elif word in strong_neg: score -= 2
-      #     if sentiments[word] == 'pos': score += val
-      #     elif sentiments[word] == 'neg': score -= val
-      
-      # if score >= 2 and self.creative: return 2
-      # elif score > 0: return 1
-      # elif score == 0: return 0
-      # elif score > -2: return -1
-      # elif self.creative: return -2
-      # else: return -1
-
-      
 
     def extract_sentiment_for_movies(self, text):
       """Creative Feature: Extracts the sentiments from a line of text
