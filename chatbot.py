@@ -93,7 +93,6 @@ class Chatbot:
       #############################################################################
       if self.creative:
         response = "I processed {} in creative mode!!".format(line)
-        #print(self.find_movies_by_title('Titanic (1997)'))
         """
         Use this code to call find_movies_closest_to_title
         regex = '"(.+)"'
