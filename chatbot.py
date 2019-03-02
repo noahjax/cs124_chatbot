@@ -324,8 +324,14 @@ class Chatbot:
       # search for matches
       matches = []
       for opt in options:
+
+        #Threw this together last sec to catch the case where alternate language
+        #title has a start_word in it. Kinda works
+        words = opt.split(' ')
+        if self.start_word(words[0].lower()):
+          opt = ' '.join(word for word in words[1:]) + ', ' + words[0]
+
         if query.lower() == opt.lower(): matches.append(idx) 
-      
       
       return matches
 
@@ -484,12 +490,16 @@ class Chatbot:
           sect = sect.replace(')', '')
           sect = sect.replace('a.k.a. ', '')
           words = sect.split(' ')
-          if self.start_word(words[-1]):
+          if self.start_word(words[-1].lower()):
             words[-2] = words[-2].replace(',', '')
             temp = words[-1] + ' ' + ' '.join(word for word in words[:-1])
             alts.append(temp)
+          else:
+            alts.append(' '.join(words))
+        
         title_pieces['alt'] = alts
         indices.extend(self.find_indices(title_pieces, title, i))
+      
       return indices
 
     def helper_extract_sentiment(self, text):
@@ -923,10 +933,9 @@ class Chatbot:
       can do and how the user can interact with it.
       """
       return """
-      Your task is to implement the chatbot as detailed in the PA6 instructions.
-      Remember: in the starter mode, movie names will come in quotation marks and
-      expressions of sentiment will be simple!
-      
+      Hello! My name is Lil Tae and I will be your amazing movie recommending chatbot!
+      Let me know what moves you like and I will tell you about more similar movies that 
+      you may also enjoy. I'm way nicer than the original Tae!     
       
       """
 
