@@ -381,7 +381,7 @@ class Chatbot:
         self.movieIndexes = self.find_movies_by_title(self.moviename)
 
         if not self.movieIndexes:
-          self.movieIndexes = self.find_movies_by_title(self.moviename.title())
+          self.movieIndexes = self.find_movies_closest_to_title(self.moviename)
           if not self.movieIndexes:
             self.reset_to_beginning("")
             return "We could not find a movie with that title. Please try again.\n"
@@ -433,7 +433,6 @@ class Chatbot:
 
       
       return self.SENTINAL
-
       
     def find_movies_by_title(self, title):
       """ Given a movie title, return a list of indices of matching movies.
