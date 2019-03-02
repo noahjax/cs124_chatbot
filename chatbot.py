@@ -126,36 +126,29 @@ class Chatbot:
         # extract sentiment ------------------------- step 2
         # self.userMovieMap[movieindex]= sentiment--- step 3
 
-
-      if self.creative:
-        response = "I processed {} in creative mode!!".format(line)
-        #print(self.extract_titles(line))
-      else:
-        response = "I processed {} in starter mode!!".format(line)
-
-        if self.step_count == 0:
-          text = self.helper_extract_titles(line)
-          if text != self.SENTINAL:
-            return text
-          # else:
-            # print("Step 0 complete")
-        if self.step_count == 1:
-          text = self.helper_find_movies_by_title2(line)
-          if text != self.SENTINAL:
-            return text
-          # else:
-            # print("Step 1 complete")
-        if self.step_count == 2:
-          text = self.helper_extract_sentiment(line)
-          if text != self.SENTINAL:
-            return text
-          else:
-            print("Step 2 complete")
-        # after 5 titles, give recommendations
-        if self.step_count == 3:
-          text = self.helper_recommend(line)
-          if text != self.SENTINAL:
-            return text
+      if self.step_count == 0:
+        text = self.helper_extract_titles(line)
+        if text != self.SENTINAL:
+          return ("\n" + text)
+        # else:
+          # print("Step 0 complete")
+      if self.step_count == 1:
+        text = self.helper_find_movies_by_title2(line)
+        if text != self.SENTINAL:
+          return ("\n" + text)
+        # else:
+          # print("Step 1 complete")
+      if self.step_count == 2:
+        text = self.helper_extract_sentiment(line)
+        if text != self.SENTINAL:
+          return ("\n" + text)
+        # else:
+        #   print("Step 2 complete")
+      # after 5 titles, give recommendations
+      if self.step_count == 3:
+        text = self.helper_recommend(line)
+        if text != self.SENTINAL:
+          return ("\n" + text)
   
   
 
@@ -315,7 +308,7 @@ class Chatbot:
           prompt += "Which movie did you mean: "
           
           for index in enumerate(self.movieIndexes):
-            prompt += str(  movie_titles[(index[1])][0])
+            prompt += "\"" + str(  movie_titles[(index[1])][0]) + "\""
             if index[0] < len(self.movieIndexes)-2:
               prompt += ', '
             elif index[0] == (len(self.movieIndexes) - 1):
@@ -593,6 +586,8 @@ class Chatbot:
         title_info = all_movies[index]
         title = title_info[0]
         genre = title_info[1]
+        title = title.lower()
+        clarification = clarification.lower()
         if clarification in title or clarification in genre:
           ans.append(index)
       
