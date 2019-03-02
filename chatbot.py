@@ -21,7 +21,6 @@ class Chatbot:
       self.userMovieMap = {}
       self.MOVIELIMIT = 3
       self.SENTINAL = 'XY-1-2-XY'
-      self.all_movies = movielens.titles()
 
       self.ArbritraryMessages = ["Hmmm... I couldn't understand what movie you are talking about? Can you please ",
       "",
@@ -66,8 +65,7 @@ class Chatbot:
       # TODO: Write a short greeting message                                      #
       #############################################################################
 
-      greeting_message = "Hi! If you tell me what movies you like, I can help you \
-                          find more good movies."
+      greeting_message = "I'm here to help...Can you tell me what movies you like and I can then recommend something you like?"
 
       #############################################################################
       #                             END OF YOUR CODE                              #
@@ -80,7 +78,7 @@ class Chatbot:
       # TODO: Write a short farewell message                                      #
       #############################################################################
 
-      goodbye_message = "Bye! Come back anytime and I'll recommend more movies."
+      goodbye_message = "Thanks for using me. I hope you come and talk to me again soon!"
 
       #############################################################################
       #                             END OF YOUR CODE                              #
@@ -126,38 +124,31 @@ class Chatbot:
 
 
         # extract sentiment ------------------------- step 2
-        # self.userMovieMap[movieindex]= sentiment--- step3
+        # self.userMovieMap[movieindex]= sentiment--- step 3
 
-
-      if self.creative:
-        response = "I processed {} in creative mode!!".format(line)
-        #print(self.extract_titles(line))
-      else:
-        response = "I processed {} in starter mode!!".format(line)
-
-        if self.step_count == 0:
-          text = self.helper_extract_titles(line)
-          if text != self.SENTINAL:
-            return text
-          # else:
-            # print("Step 0 complete")
-        if self.step_count == 1:
-          text = self.helper_find_movies_by_title(line)
-          if text != self.SENTINAL:
-            return text
-          # else:
-            # print("Step 1 complete")
-        if self.step_count == 2:
-          text = self.helper_extract_sentiment(line)
-          if text != self.SENTINAL:
-            return text
-          # else:
-            # print("Step 2 complete")
-        # after 5 titles, give recommendations
-        if self.step_count == 3:
-          text = self.helper_recommend(line)
-          if text != self.SENTINAL:
-            return text
+      if self.step_count == 0:
+        text = self.helper_extract_titles(line)
+        if text != self.SENTINAL:
+          return ("\n" + text)
+        # else:
+          # print("Step 0 complete")
+      if self.step_count == 1:
+        text = self.helper_find_movies_by_title2(line)
+        if text != self.SENTINAL:
+          return ("\n" + text)
+        # else:
+          # print("Step 1 complete")
+      if self.step_count == 2:
+        text = self.helper_extract_sentiment(line)
+        if text != self.SENTINAL:
+          return ("\n" + text)
+        # else:
+        #   print("Step 2 complete")
+      # after 5 titles, give recommendations
+      if self.step_count == 3:
+        text = self.helper_recommend(line)
+        if text != self.SENTINAL:
+          return ("\n" + text)
   
   
 
@@ -226,6 +217,31 @@ class Chatbot:
 
       return self.SENTINAL
 
+    def start_word(self, word):
+      possible = {'the', 'an', 'a', 'le', 'la'}
+      return word.lower() in possible
+
+    def find_match(self, names, text):
+      matches = []
+      for name in names:
+
+        # format name
+        words = name.split(' ')
+        if self.start_word(words[-1]):
+          words[-2] = words[-2].replace(',', '')
+          name = words[-1] + ' ' + ' '.join(word for word in words[:-1])
+
+        # find valid title
+        name = name.lower()
+        text = text.lower()
+        loc  = text.find(name)
+        if(loc != -1):
+          if not ((loc != 0 and text[loc-1].isalnum()) or (loc+len(name) < len(text) and text[loc+len(name)].isalnum())):
+            if not (loc-2 >= 0 and text[loc-2] == 'i' and (loc-3 == -1 or text[loc-3] == ' ')):
+              matches.append(name)
+
+      return matches
+
     def extract_titles(self, text):
       """Extract potential movie titles from a line of text.
 
@@ -245,9 +261,72 @@ class Chatbot:
       :param text: a user-supplied line of text that may contain movie titles
       :returns: list of movie titles that are potentially in the text
       """
-      regex = '"(.*?)"'
-      matches = re.findall(regex, text)
+      matches = []
 
+      # add all phrases in quotation marks
+      regex = '"(.+?)"'
+      prelim = re.findall(regex, text)
+      matches.extend(prelim)
+      for phrase in prelim: text = text.replace('"' + phrase + '"', '')
+
+      # check for all movies
+      for title in self.titles:
+        names = []
+
+        # build list of possible titles
+        sections = title[0].split(' (')
+
+        # add first and end if only
+        names.append(sections[0])
+        sections = sections[1:]
+        if not sections:
+          matches.extend(self.find_match(names, text))
+          continue
+
+        # remove date if it exists
+        inner = '\d{4}\)'
+        if len(re.findall(inner, sections[-1])) != 0: sections = sections[:-1]
+        if not sections:
+          matches.extend(self.find_match(names, text))
+          continue
+
+        # add all alternate titles
+        for sect in sections:
+          sect = sect.replace(')', '')
+          sect = sect.replace('a.k.a. ', '')
+          names.append(sect)
+          matches.extend(self.find_match(names, text))
+
+      # remove duplicates
+      copies = set()
+      for i in range(len(matches)):
+        for check in matches[i+1:]:
+          if matches[i] == check:
+            copies.add(i)
+      count = 0
+      for copy in copies:
+        del matches[copy-count]
+        count += 1
+
+      return matches
+
+    def find_indices(self, p, query, idx):
+      # IMPORTANT: only looks at main, alt, maint+date, and alt+date combinations; not all possible      
+      
+      # build options
+      options = []
+      options.append(p['main'])
+      if p['date'] != '': options.append(p['main'] + ' (' + p['date'] + ')')
+      for alt in p['alt']:
+        options.append(alt)
+        if p['date'] != '': options.append(alt + ' (' + p['date'] + ')')
+
+      # search for matches
+      matches = []
+      for opt in options:
+        if query.lower() == opt.lower(): matches.append(idx) 
+      
+      
       return matches
 
     '''
@@ -255,6 +334,7 @@ class Chatbot:
     returns either the prompt to user OR '-1'
     '''
     def helper_find_movies_by_title(self, text):
+      movie_titles = movielens.titles()
       if not self.helper_find_movies_by_title_begun:
         self.helper_find_movies_by_title_begun = True
         self.movieIndexes = self.find_movies_by_title(self.moviename)
@@ -266,15 +346,16 @@ class Chatbot:
             return "We could not find a movie with that title. Please try again.\n"
       
         if len(self.movieIndexes) > 1:
-          prompt = "I found a lot of movies that matches under " + self.moviename + "\n"
+          prompt = "\nI found a lot of movies that matches under " + self.moviename + "\n"
           prompt += "Can you please enter the number that best matches the movie you wanted? or say anything else? \n"
           
           for index in enumerate(self.movieIndexes):
-            prompt += "(" + str(index[0]) + ") : " + str(  self.all_movies[(index[1])][0]  ) + "\n"
+            prompt += "(" + str(index[0]) + ") : " + str(  movie_titles[(index[1])][0]  ) + "\n"
           return prompt
 
       if len(self.movieIndexes) == 1:
         self.movieIndex = self.movieIndexes[0]
+        self.moviename = movie_titles[self.movieIndex][0]
         self.step_count = 2
         return self.SENTINAL
       
@@ -282,17 +363,78 @@ class Chatbot:
         index = int(text)
       except ValueError:
         self.reset_to_beginning("")
-        return "I don't understand that option... Let's start again?"
+        return "I don't understand that... Let's start again?"
 
       if index > (len(self.movieIndexes) -1) or index < 0:
         self.reset_to_beginning("")
-        return "I understand that you don't want any of these options... Can we start again?"
+        return "I understand that you don't want none of those...Let's start again."
       self.movieIndex = self.movieIndexes[index]
-
+      self.moviename = movie_titles[self.movieIndex][0]
       # was on set1 now going on to step 2
       self.step_count = 2
       return self.SENTINAL
 
+    def helper_find_movies_by_title2(self, text):
+      movie_titles = movielens.titles()
+      if not self.helper_find_movies_by_title_begun:
+        self.helper_find_movies_by_title_begun = True
+        self.movieIndexes = self.find_movies_by_title(self.moviename)
+
+        if not self.movieIndexes:
+          self.movieIndexes = self.find_movies_by_title(self.moviename.title())
+          if not self.movieIndexes:
+            self.reset_to_beginning("")
+            return "We could not find a movie with that title. Please try again.\n"
+      
+        if len(self.movieIndexes) > 1:
+          prompt = "\nI found a lot of movies that matches under " + self.moviename + "\n"
+          prompt += "Which movie did you mean: "
+          
+          for index in enumerate(self.movieIndexes):
+            prompt += "\"" + str(  movie_titles[(index[1])][0]) + "\""
+            if index[0] < len(self.movieIndexes)-2:
+              prompt += ', '
+            elif index[0] == (len(self.movieIndexes) - 1):
+              prompt += '?'
+            else:
+              prompt += ' or '
+          return prompt
+
+      if len(self.movieIndexes) == 1:
+        self.movieIndex = self.movieIndexes[0]
+        self.moviename = movie_titles[self.movieIndex][0]
+        self.step_count = 2
+        return self.SENTINAL
+      
+      self.movieIndexes = self.disambiguate(text, self.movieIndexes)
+      if len(self.movieIndexes) == 0:
+        self.reset_to_beginning("")
+        return "What are you saying??? Let's just start over please."
+
+      if len(self.movieIndexes) == 1:
+        self.movieIndex = self.movieIndexes[0]
+        self.moviename = movie_titles[self.movieIndex][0]
+        self.step_count = 2
+        return self.SENTINAL
+
+      if len(self.movieIndexes) > 1:
+        prompt = "\nI found a lot of movies that matches under " + self.moviename + "\n"
+        prompt += "Which movie did you mean: "
+        
+        for index in enumerate(self.movieIndexes):
+          prompt += "\"" + str(  movie_titles[(index[1])][0]) + "\""
+          if index[0] < len(self.movieIndexes)-2:
+            prompt += ',  '
+          elif index[0] == (len(self.movieIndexes) - 1):
+            prompt += '?'
+          else:
+            prompt += ' or '
+        return prompt
+
+      
+      return self.SENTINAL
+
+      
     def find_movies_by_title(self, title):
       """ Given a movie title, return a list of indices of matching movies.
 
@@ -309,37 +451,54 @@ class Chatbot:
       :param title: a string containing a movie title
       :returns: a list of indices of matching movies
       """
-      regex = "\((\d{4})\)"
-      year = re.findall(regex, title)
-      if len(year) > 0: 
-        year = year[-1]      
-        title = title[:-7]
 
       words = title.split(' ')
-      #TODO: Handle cases other than The, An, and A
-      if words[0] == "The" or words[0] == "An" or words[0] == "A":
+      if self.start_word(words[0].lower()):
         title = ' '.join(word for word in words[1:]) + ', ' + words[0]
-      
-      all_movies = movielens.titles()
-      matches = []
-      for i, movie in enumerate(all_movies):
-        cur_title, _ = movie
-        cur_year = cur_title[-5:-1]
-        cur_title = cur_title[:-7]
 
-        if title in cur_title and (year == [] or year == cur_year):
-          matches.append(i)
+      indices = []
+      for i in range(len(self.titles)):
+        # build list of possible titles
+        title_pieces = {}
+        sections = self.titles[i][0].split(' (')
 
-      return matches
+        title_pieces['main'] = sections[0]
+        sections = sections[1:]
+        if not sections:
+          title_pieces['date'] = ''
+          title_pieces['alt'] = []
+          indices.extend(self.find_indices(title_pieces, title, i))
+          continue
+
+        regex = '(\d{4})'
+        date = re.findall(regex, sections[-1])
+        if date: 
+          sections = sections[:-1]
+          title_pieces['date'] = date[0]
+        if not sections:
+          title_pieces['alt'] = []
+          indices.extend(self.find_indices(title_pieces, title, i))
+          continue
+
+        alts = []
+        for sect in sections:
+          sect = sect.replace(')', '')
+          sect = sect.replace('a.k.a. ', '')
+          words = sect.split(' ')
+          if self.start_word(words[-1]):
+            words[-2] = words[-2].replace(',', '')
+            temp = words[-1] + ' ' + ' '.join(word for word in words[:-1])
+            alts.append(temp)
+        title_pieces['alt'] = alts
+        indices.extend(self.find_indices(title_pieces, title, i))
+      return indices
 
     def helper_extract_sentiment(self, text):
-      print("extract sentiment was entered")
       if not self.helper_extract_sentiment_begun:
-        # print("beginning of extract sentiment")
         self.helper_extract_sentiment_begun = True
         sentiment = self.extract_sentiment(self.originalLine)
         if sentiment == 0:
-          prompt = "I saw that you wrote \"" + self.originalLine + "\" but...like...how did " + self.moviename + " make you feel?\n"
+          prompt = "I saw that you wrote \'" + self.originalLine + "\' but...like...how did " + self.moviename + " make you feel?\n"
           return prompt
 
       elif not self.helper_extract_sentiment_second_attempt:
@@ -481,7 +640,35 @@ class Chatbot:
         and the second is the sentiment in the text toward that movie
       """
 
-    #   creative
+#   Helper method for find_movies_closest_to_title
+    def min_edit(self, source, target):
+    
+      # Create constants
+      n = len(source)+1
+      m = len(target)+1
+      D = np.zeros((n,m), 'int')
+      
+      # Init
+      for j in range(m):
+          D[0][j] = j
+      for i in range(n):
+          D[i][0] = i
+          
+      # Recurrence
+      for i in range(1,n):
+          min_num = float('inf')
+          for j in range(1,m):
+              if source[i-1] != target[j-1]:
+                  D[i][j] = np.min([D[i-1][j]+1, D[i-1][j-1]+1, D[i][j-1]+1])
+              else:
+                  D[i][j] = np.min([D[i-1][j], D[i-1][j-1], D[i][j-1]]) 
+              if D[i][j] < min_num:
+                min_num = D[i][j]
+          if min_num > 3:
+            return 4    
+      
+      return D[n-1][m-1]
+
     def find_movies_closest_to_title(self, title, max_distance=3):
       """Creative Feature: Given a potentially misspelled movie title,
       return a list of the movies in the dataset whose titles have the least edit distance
@@ -500,10 +687,31 @@ class Chatbot:
       :param max_distance: the maximum edit distance to search for
       :returns: a list of movie indices with titles closest to the given title and within edit distance max_distance
       """
+      # IMPORTANT: only looks for matches to the main title and not alternates or dates
+      min_dist = float('inf')
+      options = []
+      for i in range(len(self.titles)):
 
-      pass
-    
-    #   creative
+        # extract title
+        idk = ''
+        if '(' not in self.titles[i][0]:
+          idk = self.titles[i][0]
+        else:
+          regex = '(.+) \('
+          matches = re.findall(regex, self.titles[i][0])
+          idk = matches[0]
+        #print(idk)
+
+        # find edit distance
+        dist = self.min_edit(title, idk)
+        if dist <= max_distance and dist < min_dist:
+          min_dist = dist
+          options = [i]
+        elif dist <= max_distance and dist == min_dist:
+          options.append(i)
+
+      return options
+
     def disambiguate(self, clarification, candidates):
       """Creative Feature: Given a list of movies that the user could be talking about 
       (represented as indices), and a string given by the user as clarification 
@@ -529,6 +737,8 @@ class Chatbot:
         title_info = all_movies[index]
         title = title_info[0]
         genre = title_info[1]
+        title = title.lower()
+        clarification = clarification.lower()
         if clarification in title or clarification in genre:
           ans.append(index)
       
@@ -586,8 +796,8 @@ class Chatbot:
       #############################################################################
       return similarity
 
-
     def helper_recommend(self, text):
+      all_movies = movielens.titles()
       if not self.helper_recommend_begun:
         self.helper_recommend_begun = True
         if len(self.userMovieMap) > self.MOVIELIMIT:
@@ -599,18 +809,19 @@ class Chatbot:
           binRatings = self.binarize(self.ratings)
           self.listOfReccomendations = self.recommend(binUserRatings, binRatings)
 
-          prompt = ("given what you told me, I think you would like the following movies: ")
-          prompt += str(self.all_movies[self.listOfReccomendations[0]][0]) + " " + str(self.all_movies[self.listOfReccomendations[1]][0]) + " " + str(self.all_movies[self.listOfReccomendations[2]][0]) + ". Would you like to hear more recommendations?"
+          prompt = ("Given what you told me, I think you would like the following movies: ")
+          prompt += str(all_movies[self.listOfReccomendations[0]][0]) + " " + str(all_movies[self.listOfReccomendations[1]][0]) + " " + str(all_movies[self.listOfReccomendations[2]][0]) + ". Would you like to hear more recommendations?"
 
           return prompt
         else: 
           self.reset_to_beginning("")
           return self.sentiment_message + "Can you tell me about another movie? \n"
-      else:    
+      else:
+          prompt = ''    
           if 'ye' in text or 'ya' in text:
-            prompt = "\nThe rest of the movies are: "
+            prompt += "\nThe rest of the movies are: "
             for index in range(3, len(self.listOfReccomendations)):
-              prompt += str(self.all_movies[index][0]) + "\n"          
+              prompt += str(all_movies[index][0]) + "\n"          
           prompt += "Thank you so much for trying me out and I hope that you continue using me :) For now, I'll forget every movie you used to like and restart over \n"
           prompt += "Please tell me your thoughts on some movies, so I can recommend some new movies to you :) \n"
           self.reset_to_beginning("")
@@ -618,7 +829,6 @@ class Chatbot:
           self.listOfPotentialMovies.clear()
           self.listOfReccomendations.clear()
           return prompt
-
         
     def recommend(self, user_ratings, ratings_matrix, k=10, creative=False):
       """Generate a list of indices of movies to recommend using collaborative filtering.
